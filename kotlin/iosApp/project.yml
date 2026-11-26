@@ -29,8 +29,8 @@ targets:
         CADisableMinimumFrameDurationOnPhone: true
         # Apple takip izni penceresindeki açıklama (reklam için zorunlu)
         NSUserTrackingUsageDescription: "Reklamların sana daha uygun olması için kullanılır. İzin vermesen de uygulamanın tamamı ücretsiz çalışır."
-        # Google Mobile Ads: AdMob iOS uygulama kimliği. "Ehliyet Ol iOS" AdMob'da henüz açılmadı → Google'ın örnek kimliği (yalnız test reklamı)
-        GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
+        # Google Mobile Ads: AdMob "Ehliyet Ol iOS" uygulama kimliği (birimler Kopru.swift'te; Debug'da test birimleri)
+        GADApplicationIdentifier: ca-app-pub-6396011409934303~9127568365
         SKAdNetworkItems:
           - SKAdNetworkIdentifier: cstr6suwn9.skadnetwork
     settings:

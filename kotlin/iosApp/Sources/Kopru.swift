@@ -7,9 +7,14 @@ import ComposeApp
 final class Kopru: NSObject, IosKopru {
     static let paylasilan = Kopru()
 
-    // Reklam birimleri: "Ehliyet Ol iOS" AdMob'da açılınca gerçek birimler buraya yazılacak. Şimdilik her iki derlemede Google'ın test birimleri.
+    // Reklam birimleri (AdMob "Ehliyet Ol iOS" ~9127568365). Deneme (Debug) derlemesinde Google'ın test birimleri.
+    #if DEBUG
     private let seritBirimi = "ca-app-pub-3940256099942544/2435281174"
     private let gecisBirimi = "ca-app-pub-3940256099942544/4411468910"
+    #else
+    private let seritBirimi = "ca-app-pub-6396011409934303/4122266653"
+    private let gecisBirimi = "ca-app-pub-6396011409934303/2682734462"
+    #endif
     private var gecis: GADInterstitialAd?
     private var reklamBasladi = false
 
