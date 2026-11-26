@@ -193,7 +193,9 @@ fun SoruResmi(ad: String, aciklama: String?, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().clip(s).background(Color.White).border(1.dp, MaterialTheme.colorScheme.outline, s).padding(8.dp), contentAlignment = Alignment.Center) {
         val r = resim
         if (r == null) Box(Modifier.fillMaxWidth().height(160.dp))
-        else Image(r, aciklama, Modifier.fillMaxWidth().heightIn(max = 460.dp), contentScale = ContentScale.Fit)
+        // Küçük şekiller (işaret levhaları) ekranın yarısına, soru resimleri tam genişliğe büyütülür
+        else Image(r, aciklama, Modifier.fillMaxWidth(if (aciklama == null) 0.5f else 1f).aspectRatio(r.width.toFloat() / r.height.coerceAtLeast(1)),
+            contentScale = ContentScale.Fit)
     }
 }
 
