@@ -177,8 +177,10 @@ fun Etiket(metin: String, renk: Color) {
 }
 
 /** Soru resmi (composeResources/files/r/…) — bir kez çözülür, bellekte küçük önbellek */
-private val resimOnbellek = object : LinkedHashMap<String, ImageBitmap>(16, 0.75f, true) {
-    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ImageBitmap>?) = size > 12
+private object resimOnbellek {
+    private val m = LinkedHashMap<String, ImageBitmap>()
+    operator fun get(ad: String): ImageBitmap? = m[ad]
+    operator fun set(ad: String, r: ImageBitmap) { m.remove(ad); m[ad] = r; while (m.size > 12) m.remove(m.keys.first()) }
 }
 
 @Composable
