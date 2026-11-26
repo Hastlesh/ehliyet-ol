@@ -1,0 +1,64 @@
+# Ehliyet Ol — iPhone derlemesi bulut Mac'te (GitHub Actions macOS, herkese açık depoda ücretsiz).
+# Simülatör için derler, açar, çökme kontrolü yapar ve App Store ekran görüntülerini (6,9") üretir.
+# App Store'a yükleme için Apple Developer üyeliği ve imza gerekir (üyelik onaylanınca eklenecek).
+name: iOS derlemesi
+on:
+  workflow_dispatch:
+  push:
+    paths: ['kotlin/**', '.github/workflows/ios.yml']
+permissions:
+  contents: read
+concurrency: { group: ios, cancel-in-progress: false }
+jobs:
+  derle:
+    runs-on: macos-15
+    timeout-minutes: 75
+    defaults: { run: { working-directory: kotlin } }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Java 17 (macOS imajında hazır)
+        run: echo "JAVA_HOME=${JAVA_HOME_17_arm64:-$JAVA_HOME_17_X64}" >> "$GITHUB_ENV"
+      - name: Kotlin iPhone çerçevesi (simülatör)
+        run: chmod +x gradlew && ./gradlew --no-daemon :composeApp:linkDebugFrameworkIosSimulatorArm64
+      - name: Xcode projesini üret
+        run: brew install xcodegen && cd iosApp && xcodegen generate
+      - name: Uygulamayı derle (simülatör)
+        run: |
+          cd iosApp
+          set -o pipefail
+          xcodebuild -project EhliyetOl.xcodeproj -scheme EhliyetOl -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO build > derleme.log 2>&1 || {
+              echo "=== HATALAR ==="; grep -nE "(: error:|^e: |What went wrong|^FAILURE|Execution failed|commands failed|Command .* failed)" -A4 derleme.log | grep -vE "(clang |Using response|ScanDependencies|builtin-)" | head -n 100
+              echo "=== KOTLIN ADIMI ==="
+              bas=$(grep -n "^PhaseScriptExecution Kotlin" derleme.log | tail -1 | cut -d: -f1)
+              [ -n "$bas" ] && sed -n "${bas},$((bas+120))p" derleme.log | grep -vE "^\s+(cd |export |/bin/sh)" | head -n 120
+              exit 1; }
+          tail -n 5 derleme.log
+      - name: Simülatörde aç — çökme kontrolü ve ekran görüntüleri (iPhone 6,9")
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -maxdepth 6 -path '*Debug-iphonesimulator/EhliyetOl.app' | head -1)
+          CIHAZ=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];L=[x for k,v in d.items() if 'iOS' in k for x in v if 'Pro Max' in x['name']];print(L[-1]['udid'])")
+          echo "uygulama: $APP  cihaz: $CIHAZ"
+          xcrun simctl boot "$CIHAZ"; xcrun simctl bootstatus "$CIHAZ" -b >/dev/null
+          xcrun simctl spawn "$CIHAZ" defaults write -g AppleLanguages -array tr-TR
+          xcrun simctl spawn "$CIHAZ" defaults write -g AppleLocale -string tr_TR
+          xcrun simctl shutdown "$CIHAZ"; xcrun simctl boot "$CIHAZ"; xcrun simctl bootstatus "$CIHAZ" -b >/dev/null
+          xcrun simctl status_bar "$CIHAZ" override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 || true
+          xcrun simctl install "$CIHAZ" "$APP"
+          mkdir -p ../ekran
+          ac() { xcrun simctl terminate "$CIHAZ" com.celikgames.ehliyetol 2>/dev/null || true; env SIMCTL_CHILD_EHLIYETOL_GOSTERIM=1 SIMCTL_CHILD_EHLIYETOL_ORNEK=1 "$@" xcrun simctl launch "$CIHAZ" com.celikgames.ehliyetol; sleep 20; }
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=ana;        xcrun simctl io "$CIHAZ" screenshot ../ekran/1_ana.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=test;       xcrun simctl io "$CIHAZ" screenshot ../ekran/2_test.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=sinav;      xcrun simctl io "$CIHAZ" screenshot ../ekran/3_sinav.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=konu;       xcrun simctl io "$CIHAZ" screenshot ../ekran/4_konu.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=ders;       xcrun simctl io "$CIHAZ" screenshot ../ekran/5_ders.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=istatistik; xcrun simctl io "$CIHAZ" screenshot ../ekran/6_istatistik.png
+          ac SIMCTL_CHILD_EHLIYETOL_EKRAN=ana SIMCTL_CHILD_EHLIYETOL_TEMA=koyu; xcrun simctl io "$CIHAZ" screenshot ../ekran/7_koyu_tema.png
+          echo "=== ÇALIŞIYOR MU ==="; xcrun simctl spawn "$CIHAZ" launchctl list | grep -i ehliyetol || echo "UYGULAMA ÇALIŞMIYOR — çökmüş olabilir"
+          echo "=== HATA KAYITLARI ==="; xcrun simctl spawn "$CIHAZ" log show --last 3m --style compact --predicate 'process == "EhliyetOl"' 2>/dev/null | grep -iE "error|fault|crash|exception|uncaught|kotlin" | head -n 60 || true
+          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i ehliyet || echo "çökme raporu yok"
+      - name: Ekran görüntülerini sakla
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: ekran-goruntuleri, path: ekran/, if-no-files-found: warn, retention-days: 14 }

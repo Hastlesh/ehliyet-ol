@@ -1,0 +1,11 @@
+.gradle/
+build/
+.kotlin/
+local.properties
+google-services.json
+iosApp/Sources/GoogleService-Info.plist
+iosApp/*.xcodeproj/
+*.apk
+*.aab
+*.jks
+*sifre*
