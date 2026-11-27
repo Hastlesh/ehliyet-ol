@@ -16,6 +16,7 @@ jobs:
     env:
       TAKIM: LLNXJX2MK5
       PROJE: EhliyetOl
+      PAKETLER: com.celikgames.ehliyetol
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Java 17 (macOS imajında hazır)

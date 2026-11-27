@@ -44,6 +44,10 @@ targets:
         # Kotlin yalnız arm64 simülatör/cihaz için derlenir (Intel simülatörü yok)
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+      configs:
+        # App Store imzası: profil adı testflight.sh'den gelir (PROFIL_UYGULAMA); boşsa etkisiz
+        Release:
+          PROVISIONING_PROFILE_SPECIFIER: $(PROFIL_UYGULAMA)
     preBuildScripts:
       - name: Kotlin çerçevesini derle
         script: |
